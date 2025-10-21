@@ -294,6 +294,218 @@ class TrendFollowingStrategy:
         return False, None
 
 
+class AdaptiveSuperTrendStrategy:
+    """
+    Strategia basata su Adaptive SuperTrend con K-Means volatility clustering
+
+    Questa strategia usa un SuperTrend adattivo che si regola automaticamente
+    in base alla volatilità del mercato tramite clustering K-Means dell'ATR.
+    """
+
+    def __init__(self):
+        self.name = "Adaptive SuperTrend Strategy"
+        self.description = "Entry/Exit basati su Adaptive SuperTrend + filtri RSI e volatilità"
+
+    # ========================================================================
+    # ENTRY RULES - LONG
+    # ========================================================================
+
+    def entry_long(self, data):
+        """
+        Entry LONG quando:
+        - SuperTrend genera segnale BUY (cambio da downtrend a uptrend)
+        - RSI non in zona overbought (< 70)
+        - Volatilità non troppo alta (cluster < 2)
+
+        Args:
+            data: Dictionary con indicatori
+
+        Returns:
+            bool: True se condizioni soddisfatte
+        """
+        # Segnale principale: SuperTrend BUY
+        if not data.get('supertrend_buy', False):
+            return False
+
+        # Filtro RSI: evita entry in overbought
+        if data.get('rsi', 50) > 70:
+            return False
+
+        # Filtro volatilità: evita entry in alta volatilità estrema
+        # (cluster 2 = high volatility, potrebbe essere troppo rischioso)
+        volatility_cluster = data.get('volatility_cluster', 1)
+        if volatility_cluster == 2:
+            # Opzionale: puoi anche permettere high volatility
+            # commentando questa condizione
+            pass  # Permettiamo anche alta volatilità
+
+        # Filtro prezzo vs SuperTrend line
+        if data['close'] > data.get('supertrend', data['close']):
+            return True
+
+        return False
+
+    # ========================================================================
+    # ENTRY RULES - SHORT
+    # ========================================================================
+
+    def entry_short(self, data):
+        """
+        Entry SHORT quando:
+        - SuperTrend genera segnale SELL (cambio da uptrend a downtrend)
+        - RSI non in zona oversold (> 30)
+        - Volatilità non troppo alta (cluster < 2)
+
+        Args:
+            data: Dictionary con indicatori
+
+        Returns:
+            bool: True se condizioni soddisfatte
+        """
+        # Segnale principale: SuperTrend SELL
+        if not data.get('supertrend_sell', False):
+            return False
+
+        # Filtro RSI: evita entry in oversold
+        if data.get('rsi', 50) < 30:
+            return False
+
+        # Filtro volatilità: evita entry in alta volatilità estrema
+        volatility_cluster = data.get('volatility_cluster', 1)
+        if volatility_cluster == 2:
+            pass  # Permettiamo anche alta volatilità
+
+        # Filtro prezzo vs SuperTrend line
+        if data['close'] < data.get('supertrend', data['close']):
+            return True
+
+        return False
+
+    # ========================================================================
+    # EXIT RULES - LONG
+    # ========================================================================
+
+    def exit_long(self, data, entry_price, entry_time=None):
+        """
+        Exit LONG quando:
+        - SuperTrend genera segnale SELL (inversione trend)
+        - Take Profit raggiunto (2%)
+        - Stop Loss raggiunto (1%)
+        - RSI in zona overbought estrema (> 80)
+
+        Args:
+            data: Dictionary con indicatori
+            entry_price: Prezzo di entrata
+            entry_time: Timestamp di entrata (opzionale)
+
+        Returns:
+            tuple: (should_exit: bool, reason: str)
+        """
+        current_price = data['close']
+        profit_pct = (current_price - entry_price) / entry_price * 100
+
+        # Take Profit: 2% di profitto
+        if profit_pct >= 2.0:
+            return True, 'take_profit'
+
+        # Stop Loss: 1% di perdita
+        if profit_pct <= -1.0:
+            return True, 'stop_loss'
+
+        # Exit su segnale SuperTrend SELL
+        if data.get('supertrend_sell', False):
+            return True, 'supertrend_sell_signal'
+
+        # Exit su SuperTrend direction change
+        if data.get('supertrend_direction', -1) == 1:  # Cambiato a downtrend
+            return True, 'supertrend_downtrend'
+
+        # Exit su RSI estremo
+        if data.get('rsi', 50) > 80:
+            return True, 'rsi_extreme_overbought'
+
+        return False, None
+
+    # ========================================================================
+    # EXIT RULES - SHORT
+    # ========================================================================
+
+    def exit_short(self, data, entry_price, entry_time=None):
+        """
+        Exit SHORT quando:
+        - SuperTrend genera segnale BUY (inversione trend)
+        - Take Profit raggiunto (2%)
+        - Stop Loss raggiunto (1%)
+        - RSI in zona oversold estrema (< 20)
+
+        Args:
+            data: Dictionary con indicatori
+            entry_price: Prezzo di entrata
+            entry_time: Timestamp di entrata (opzionale)
+
+        Returns:
+            tuple: (should_exit: bool, reason: str)
+        """
+        current_price = data['close']
+        # Per short: profitto quando prezzo scende
+        profit_pct = (entry_price - current_price) / entry_price * 100
+
+        # Take Profit: 2% di profitto
+        if profit_pct >= 2.0:
+            return True, 'take_profit'
+
+        # Stop Loss: 1% di perdita
+        if profit_pct <= -1.0:
+            return True, 'stop_loss'
+
+        # Exit su segnale SuperTrend BUY
+        if data.get('supertrend_buy', False):
+            return True, 'supertrend_buy_signal'
+
+        # Exit su SuperTrend direction change
+        if data.get('supertrend_direction', 1) == -1:  # Cambiato a uptrend
+            return True, 'supertrend_uptrend'
+
+        # Exit su RSI estremo
+        if data.get('rsi', 50) < 20:
+            return True, 'rsi_extreme_oversold'
+
+        return False, None
+
+    # ========================================================================
+    # FILTERS (opzionali)
+    # ========================================================================
+
+    def can_open_position(self, data, current_positions):
+        """
+        Filtri aggiuntivi prima di aprire una posizione.
+
+        Args:
+            data: Dictionary con indicatori
+            current_positions: Lista posizioni attualmente aperte
+
+        Returns:
+            tuple: (can_open: bool, reason: str)
+        """
+        # Non aprire se SuperTrend non è disponibile
+        if 'supertrend' not in data or data['supertrend'] is None:
+            return False, 'supertrend_not_available'
+
+        # Non aprire se troppo vicino al cambio di volatilità cluster
+        # (potenzialmente instabile)
+        # Questo è opzionale, puoi commentarlo se vuoi
+
+        # Non aprire se ci sono già troppe posizioni aperte
+        if len(current_positions) >= 3:
+            return False, 'max_positions_reached'
+
+        # Verifica che l'adaptive_atr sia significativo
+        if data.get('adaptive_atr') and data['adaptive_atr'] < 0.1:
+            return False, 'extremely_low_volatility'
+
+        return True, 'ok'
+
+
 # ============================================================================
 # SELEZIONE STRATEGIA
 # ============================================================================
@@ -302,3 +514,4 @@ class TrendFollowingStrategy:
 ACTIVE_STRATEGY = TradingRules()
 # ACTIVE_STRATEGY = MeanReversionStrategy()
 # ACTIVE_STRATEGY = TrendFollowingStrategy()
+# ACTIVE_STRATEGY = AdaptiveSuperTrendStrategy()  # Strategia con Adaptive SuperTrend

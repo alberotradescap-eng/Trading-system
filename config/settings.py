@@ -128,6 +128,7 @@ ETL_CONFIG = {
         'bollinger_bands',               # Bande di Bollinger
         'atr_14',                        # Average True Range
         'volume_sma_20',                 # Volume media
+        'adaptive_supertrend',           # Adaptive SuperTrend con K-Means clustering
     ],
 
     # Parametri indicatori
@@ -138,6 +139,11 @@ ETL_CONFIG = {
     'bollinger_period': 20,
     'bollinger_std': 2,
     'atr_period': 14,
+
+    # Adaptive SuperTrend parameters
+    'adaptive_supertrend_atr_period': 10,      # Periodo ATR per SuperTrend
+    'adaptive_supertrend_multiplier': 3.0,     # Moltiplicatore bande SuperTrend
+    'adaptive_supertrend_training_period': 100, # Finestra K-Means clustering
 }
 
 # ============================================================================

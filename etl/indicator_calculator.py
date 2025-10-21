@@ -167,6 +167,207 @@ class IndicatorCalculator:
         return obv
 
     # ========================================================================
+    # ADAPTIVE SUPERTREND
+    # ========================================================================
+
+    @staticmethod
+    def _kmeans_volatility_clustering(atr_series, training_period=100, max_iterations=20):
+        """
+        Classifica la volatilità (ATR) in 3 cluster usando K-Means custom
+
+        Args:
+            atr_series: Series con valori ATR
+            training_period: Numero di periodi per training window
+            max_iterations: Max iterazioni K-Means per convergenza
+
+        Returns:
+            tuple: (low_centroid, mid_centroid, high_centroid, cluster_index)
+                   cluster_index è una Series con valori 0 (low), 1 (mid), 2 (high)
+        """
+        result_low = pd.Series(index=atr_series.index, dtype=float)
+        result_mid = pd.Series(index=atr_series.index, dtype=float)
+        result_high = pd.Series(index=atr_series.index, dtype=float)
+        result_cluster_idx = pd.Series(index=atr_series.index, dtype=float)
+
+        for i in range(len(atr_series)):
+            if i < training_period - 1:
+                continue
+
+            # Finestra di training
+            window_start = i - training_period + 1
+            window = atr_series.iloc[window_start:i+1].dropna()
+
+            if len(window) < training_period or window.std() < 1e-9:
+                # Copia valori precedenti se esistono
+                if i > 0:
+                    result_low.iloc[i] = result_low.iloc[i-1]
+                    result_mid.iloc[i] = result_mid.iloc[i-1]
+                    result_high.iloc[i] = result_high.iloc[i-1]
+                    result_cluster_idx.iloc[i] = result_cluster_idx.iloc[i-1]
+                continue
+
+            # Inizializza centroidi con percentili
+            v_min, v_max = window.min(), window.max()
+            v_range = v_max - v_min
+
+            # Guess iniziali
+            low_c = v_min + v_range * 0.25
+            mid_c = v_min + v_range * 0.50
+            high_c = v_min + v_range * 0.75
+
+            # K-Means iterations
+            for _ in range(max_iterations):
+                # Assegna ogni punto al cluster più vicino
+                distances = pd.DataFrame({
+                    'low': abs(window - low_c),
+                    'mid': abs(window - mid_c),
+                    'high': abs(window - high_c)
+                })
+                assignments = distances.idxmin(axis=1)
+
+                # Calcola nuovi centroidi
+                new_low = window[assignments == 'low'].mean() if (assignments == 'low').any() else low_c
+                new_mid = window[assignments == 'mid'].mean() if (assignments == 'mid').any() else mid_c
+                new_high = window[assignments == 'high'].mean() if (assignments == 'high').any() else high_c
+
+                # Check convergenza
+                if (abs(new_low - low_c) < 1e-9 and
+                    abs(new_mid - mid_c) < 1e-9 and
+                    abs(new_high - high_c) < 1e-9):
+                    break
+
+                low_c, mid_c, high_c = new_low, new_mid, new_high
+
+            # Ordina centroidi (low < mid < high)
+            centroids = sorted([low_c, mid_c, high_c])
+            result_low.iloc[i] = centroids[0]
+            result_mid.iloc[i] = centroids[1]
+            result_high.iloc[i] = centroids[2]
+
+            # Assegna il punto corrente al cluster più vicino
+            current_atr = atr_series.iloc[i]
+            distances_current = [abs(current_atr - c) for c in centroids]
+            result_cluster_idx.iloc[i] = distances_current.index(min(distances_current))
+
+        return result_low, result_mid, result_high, result_cluster_idx
+
+    @staticmethod
+    def calculate_adaptive_supertrend(data, atr_period=10, multiplier=3.0, training_period=100):
+        """
+        Adaptive SuperTrend usando K-Means clustering della volatilità
+
+        Il SuperTrend si adatta dinamicamente alla volatilità del mercato usando
+        i centroidi dei cluster di volatilità invece di un ATR fisso.
+
+        Args:
+            data: DataFrame con colonne OHLC
+            atr_period: Periodo per calcolo ATR
+            multiplier: Moltiplicatore per le bande SuperTrend
+            training_period: Finestra di training per K-Means
+
+        Returns:
+            tuple: (supertrend_line, direction, buy_signals, sell_signals,
+                    cluster_index, adaptive_atr)
+                - supertrend_line: Linea SuperTrend
+                - direction: 1=downtrend, -1=uptrend
+                - buy_signals: Boolean series per segnali BUY
+                - sell_signals: Boolean series per segnali SELL
+                - cluster_index: Indice cluster volatilità (0=low, 1=mid, 2=high)
+                - adaptive_atr: ATR adattivo usato (centroide del cluster corrente)
+        """
+        # Calcola ATR base
+        atr = IndicatorCalculator.calculate_atr(data, period=atr_period)
+
+        # K-Means clustering della volatilità
+        low_c, mid_c, high_c, cluster_idx = IndicatorCalculator._kmeans_volatility_clustering(
+            atr, training_period=training_period
+        )
+
+        # Crea ATR adattivo basato sul cluster corrente
+        adaptive_atr = pd.Series(index=data.index, dtype=float)
+        for i in range(len(data)):
+            if pd.notna(cluster_idx.iloc[i]):
+                cluster = int(cluster_idx.iloc[i])
+                if cluster == 0:
+                    adaptive_atr.iloc[i] = low_c.iloc[i]
+                elif cluster == 1:
+                    adaptive_atr.iloc[i] = mid_c.iloc[i]
+                else:  # cluster == 2
+                    adaptive_atr.iloc[i] = high_c.iloc[i]
+
+        # Calcola SuperTrend usando ATR adattivo
+        high = data['high']
+        low = data['low']
+        close = data['close']
+
+        hl2 = (high + low) / 2
+
+        # Bande base
+        basic_upper = hl2 + multiplier * adaptive_atr
+        basic_lower = hl2 - multiplier * adaptive_atr
+
+        # Inizializza output
+        final_upper = pd.Series(index=data.index, dtype=float)
+        final_lower = pd.Series(index=data.index, dtype=float)
+        supertrend = pd.Series(index=data.index, dtype=float)
+        direction = pd.Series(index=data.index, dtype=float)
+
+        # Calcola SuperTrend con logica di trend
+        for i in range(len(data)):
+            if i == 0 or pd.isna(adaptive_atr.iloc[i]):
+                final_upper.iloc[i] = basic_upper.iloc[i]
+                final_lower.iloc[i] = basic_lower.iloc[i]
+                direction.iloc[i] = -1  # Inizia uptrend
+                supertrend.iloc[i] = final_lower.iloc[i]
+                continue
+
+            # Update upper band
+            if basic_upper.iloc[i] < final_upper.iloc[i-1] or close.iloc[i-1] > final_upper.iloc[i-1]:
+                final_upper.iloc[i] = basic_upper.iloc[i]
+            else:
+                final_upper.iloc[i] = final_upper.iloc[i-1]
+
+            # Update lower band
+            if basic_lower.iloc[i] > final_lower.iloc[i-1] or close.iloc[i-1] < final_lower.iloc[i-1]:
+                final_lower.iloc[i] = basic_lower.iloc[i]
+            else:
+                final_lower.iloc[i] = final_lower.iloc[i-1]
+
+            # Determina direction
+            prev_direction = direction.iloc[i-1]
+            if prev_direction == 1:  # Was downtrend
+                if close.iloc[i] > final_upper.iloc[i]:
+                    direction.iloc[i] = -1  # Switch to uptrend
+                else:
+                    direction.iloc[i] = 1
+            else:  # Was uptrend
+                if close.iloc[i] < final_lower.iloc[i]:
+                    direction.iloc[i] = 1  # Switch to downtrend
+                else:
+                    direction.iloc[i] = -1
+
+            # SuperTrend line
+            if direction.iloc[i] == -1:  # Uptrend
+                supertrend.iloc[i] = final_lower.iloc[i]
+            else:  # Downtrend
+                supertrend.iloc[i] = final_upper.iloc[i]
+
+        # Genera segnali
+        buy_signals = pd.Series(False, index=data.index)
+        sell_signals = pd.Series(False, index=data.index)
+
+        for i in range(1, len(data)):
+            # BUY: direction passa da 1 (downtrend) a -1 (uptrend)
+            if direction.iloc[i] == -1 and direction.iloc[i-1] == 1:
+                buy_signals.iloc[i] = True
+
+            # SELL: direction passa da -1 (uptrend) a 1 (downtrend)
+            elif direction.iloc[i] == 1 and direction.iloc[i-1] == -1:
+                sell_signals.iloc[i] = True
+
+        return supertrend, direction, buy_signals, sell_signals, cluster_idx, adaptive_atr
+
+    # ========================================================================
     # MAIN PROCESSING
     # ========================================================================
 
@@ -216,6 +417,13 @@ class IndicatorCalculator:
         logger.debug("Calcolando Volume indicators...")
         df['volume_sma_20'] = self.calculate_volume_sma(df, period=20)
         df['obv'] = self.calculate_obv(df)
+
+        logger.debug("Calcolando Adaptive SuperTrend...")
+        (df['supertrend'], df['supertrend_direction'],
+         df['supertrend_buy'], df['supertrend_sell'],
+         df['volatility_cluster'], df['adaptive_atr']) = self.calculate_adaptive_supertrend(
+            df, atr_period=10, multiplier=3.0, training_period=100
+        )
 
         # Rimuovi NaN (prime righe dove indicatori non sono calcolabili)
         df = df.dropna()
@@ -293,6 +501,13 @@ class IndicatorCalculator:
         df['atr'] = self.calculate_atr(df)
         df['volume_sma_20'] = self.calculate_volume_sma(df)
 
+        # Calcola Adaptive SuperTrend
+        (df['supertrend'], df['supertrend_direction'],
+         df['supertrend_buy'], df['supertrend_sell'],
+         df['volatility_cluster'], df['adaptive_atr']) = self.calculate_adaptive_supertrend(
+            df, atr_period=10, multiplier=3.0, training_period=100
+        )
+
         # Prendi ultimo valore (più recente)
         last = df.iloc[-1]
 
@@ -310,6 +525,13 @@ class IndicatorCalculator:
             'bb_lower': last['bb_lower'],
             'atr': last['atr'],
             'volume_sma_20': last['volume_sma_20'],
+            # Adaptive SuperTrend indicators
+            'supertrend': last['supertrend'],
+            'supertrend_direction': last['supertrend_direction'],
+            'supertrend_buy': last['supertrend_buy'],
+            'supertrend_sell': last['supertrend_sell'],
+            'volatility_cluster': last['volatility_cluster'],
+            'adaptive_atr': last['adaptive_atr'],
         }
 
 
