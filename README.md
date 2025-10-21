@@ -7,7 +7,7 @@ Sistema di trading automatizzato per criptovalute con architettura modulare, sup
 - **Trading Realtime**: Connessione a Binance WebSocket per dati live
 - **Architettura Modulare**: Extractors → ETL → Engine → Broker
 - **TP/SL Avanzato**: Stop Loss e Take Profit normali + FINAL (con blocco sistema)
-- **LLM Advisory**: Chiedi consenso a Claude/GPT prima di ogni trade
+- **LLM Advisory**: Chiedi consenso a LLM (Claude, GPT, Gemini, Llama, etc.) prima di ogni trade via OpenRouter
 - **Notifiche Complete**: Audio + Telegram con statistiche e grafici
 - **Backtesting**: Testa strategie su dati storici
 - **Scheduling**: Imposta giorni e orari di trading
@@ -39,14 +39,23 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configura variabili d'ambiente
-Crea un file `.env`:
+Crea un file `.env` copiando `.env.example`:
+```bash
+cp .env.example .env
+```
+
+Poi modifica `.env`:
 ```env
 # Binance API
 BINANCE_API_KEY=your_api_key
 BINANCE_API_SECRET=your_api_secret
 
-# LLM (Anthropic/OpenAI)
-ANTHROPIC_API_KEY=your_anthropic_key
+# LLM - Scegli uno dei seguenti provider:
+# OpenRouter (Consigliato - accesso a multipli modelli)
+OPENROUTER_API_KEY=your_openrouter_key
+
+# Oppure usa provider diretti:
+# ANTHROPIC_API_KEY=your_anthropic_key
 # OPENAI_API_KEY=your_openai_key
 
 # Telegram
@@ -162,24 +171,69 @@ Quando raggiunti i limiti FINAL, il sistema:
 
 ## Plugin LLM
 
-Prima di ogni trade, il sistema può chiedere consenso a un LLM (Claude/GPT).
+Prima di ogni trade, il sistema può chiedere consenso a un LLM.
+
+### Provider Supportati
+
+1. **OpenRouter** (Consigliato) - Accesso a multipli modelli:
+   - Anthropic Claude (3.5 Sonnet, Opus)
+   - OpenAI GPT (GPT-4 Turbo, GPT-4)
+   - Google Gemini (Pro 1.5, Flash)
+   - Meta Llama (3.1 70B/405B)
+   - Mistral AI (Large, Medium)
+   - DeepSeek (Chat)
+   - E molti altri...
+
+2. **Anthropic** (Diretto) - Solo modelli Claude
+3. **OpenAI** (Diretto) - Solo modelli GPT
+
+### Configurazione
 
 In `config/settings.py`:
 ```python
-TRADING_CONFIG = {
-    'llm_enabled': True,
-    'llm_provider': 'anthropic',  # o 'openai'
-    'llm_api_key': 'your-api-key',
+LLM_CONFIG = {
+    'enabled': True,
+    'provider': 'openrouter',  # 'openrouter', 'anthropic' o 'openai'
+    'api_key': os.getenv('OPENROUTER_API_KEY'),
+    'model': 'anthropic/claude-3.5-sonnet',  # Modello da usare
+    'temperature': 0.3,
 }
 ```
 
+### Modelli Disponibili via OpenRouter
+
+**Premium (alta qualità):**
+- `anthropic/claude-3.5-sonnet` - Eccellente per analisi complesse
+- `openai/gpt-4-turbo` - Ottimo ragionamento
+- `google/gemini-pro-1.5` - Bilanciato
+
+**Economici:**
+- `meta-llama/llama-3.1-70b-instruct` - Open source
+- `mistralai/mistral-large` - Veloce ed economico
+- `deepseek/deepseek-chat` - Ultra economico
+
+**Gratuiti (per testing):**
+- `meta-llama/llama-3-8b-instruct:free`
+- `google/gemma-7b-it:free`
+
+📖 **Guida completa**: Vedi [docs/OPENROUTER_SETUP.md](docs/OPENROUTER_SETUP.md)
+
+### Come Funziona
+
 Il sistema invia al LLM:
-- Indicatori tecnici (RSI, MACD, etc.)
+- Indicatori tecnici (RSI, MACD, SMA, ATR, etc.)
 - Prezzo attuale e volume
 - Contesto di mercato
 - Tipo di trade (BUY/SELL)
 
 L'LLM risponde con APPROVE o REJECT + motivazione.
+
+### Esempi di Utilizzo
+
+Prova diversi modelli:
+```bash
+python examples/openrouter_examples.py
+```
 
 ## Notifiche
 

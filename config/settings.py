@@ -50,10 +50,18 @@ TRADING_CONFIG = {
 # ============================================================================
 LLM_CONFIG = {
     'enabled': True,                    # Abilita plugin LLM
-    'provider': 'anthropic',            # 'anthropic' o 'openai'
-    'api_key': os.getenv('ANTHROPIC_API_KEY'),  # o OPENAI_API_KEY
-    'model': 'claude-3-5-sonnet-20241022',      # o 'gpt-4-turbo'
-    'temperature': 0.3,                 # Temperatura per risposte
+    'provider': 'openrouter',           # 'anthropic', 'openai' o 'openrouter'
+    'api_key': os.getenv('OPENROUTER_API_KEY'),  # o ANTHROPIC_API_KEY o OPENAI_API_KEY
+
+    # Modelli disponibili per provider:
+    # - anthropic: 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229'
+    # - openai: 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'
+    # - openrouter: 'anthropic/claude-3.5-sonnet', 'openai/gpt-4-turbo',
+    #               'google/gemini-pro-1.5', 'meta-llama/llama-3.1-70b-instruct',
+    #               'mistralai/mistral-large', 'deepseek/deepseek-chat'
+    'model': 'anthropic/claude-3.5-sonnet',
+
+    'temperature': 0.3,                 # Temperatura per risposte (0-1)
     'max_tokens': 500,                  # Max tokens risposta
     'timeout': 10,                      # Timeout richiesta (secondi)
     'retry_on_error': True,             # Retry se errore

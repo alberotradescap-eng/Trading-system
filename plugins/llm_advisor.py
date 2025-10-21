@@ -1,8 +1,13 @@
 """
 LLM Advisor Plugin
 
-Chiede consenso a un LLM (Claude/GPT) prima di eseguire un trade.
+Chiede consenso a un LLM prima di eseguire un trade.
 L'LLM analizza indicatori tecnici e contesto di mercato.
+
+Provider supportati:
+- Anthropic (Claude)
+- OpenAI (GPT)
+- OpenRouter (accesso a multipli modelli: Claude, GPT, Gemini, Llama, Mistral, etc.)
 """
 
 import anthropic
@@ -19,7 +24,7 @@ class LLMAdvisor:
     def __init__(self, provider='anthropic', api_key=None, model=None, temperature=0.3):
         """
         Args:
-            provider: 'anthropic' o 'openai'
+            provider: 'anthropic', 'openai' o 'openrouter'
             api_key: API key del provider
             model: Modello da usare (opzionale)
             temperature: Temperature per risposte (0-1)
@@ -34,6 +39,19 @@ class LLMAdvisor:
         elif provider == 'openai':
             self.client = openai.OpenAI(api_key=api_key)
             self.model = model or 'gpt-4-turbo'
+        elif provider == 'openrouter':
+            # OpenRouter usa l'API di OpenAI ma con base_url personalizzato
+            self.client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1"
+            )
+            # Modelli consigliati OpenRouter:
+            # - anthropic/claude-3.5-sonnet
+            # - openai/gpt-4-turbo
+            # - google/gemini-pro-1.5
+            # - meta-llama/llama-3.1-70b-instruct
+            # - mistralai/mistral-large
+            self.model = model or 'anthropic/claude-3.5-sonnet'
         else:
             raise ValueError(f"Provider non supportato: {provider}")
 
@@ -61,8 +79,10 @@ class LLMAdvisor:
         try:
             if self.provider == 'anthropic':
                 response = self._call_anthropic(prompt)
-            else:
+            elif self.provider in ['openai', 'openrouter']:
                 response = self._call_openai(prompt)
+            else:
+                raise ValueError(f"Provider non supportato: {self.provider}")
 
             # Parsa risposta
             approved = self._parse_response(response)
@@ -196,8 +216,10 @@ Fornisci un breve riassunto (max 2 righe) del contesto di mercato generale."""
         try:
             if self.provider == 'anthropic':
                 return self._call_anthropic(prompt)
-            else:
+            elif self.provider in ['openai', 'openrouter']:
                 return self._call_openai(prompt)
+            else:
+                raise ValueError(f"Provider non supportato: {self.provider}")
         except Exception as e:
             logger.error(f"Errore market analysis: {e}")
             return "Market analysis not available"
