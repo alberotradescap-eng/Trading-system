@@ -63,7 +63,22 @@ Modifica i file in `config/`:
 
 ## Utilizzo
 
-### Modalità Live Trading
+### Interfaccia Grafica (GUI) - NUOVO!
+```bash
+python run_gui.py
+```
+
+L'interfaccia grafica offre:
+- **Selezione strategia visuale** con 3 strategie disponibili
+- **Controlli trading** (Start/Stop) con conferma
+- **Dashboard in tempo reale** con PnL, posizioni aperte, trade count, win rate
+- **Monitor posizioni** con tabella dettagliata live
+- **Storico trade** con tutte le operazioni completate
+- **Log sistema** in tempo reale per diagnostica
+
+Vedi [GUI_README.md](GUI_README.md) per la documentazione completa della GUI.
+
+### Modalità Live Trading (CLI)
 ```bash
 python main.py --mode live
 ```
@@ -210,8 +225,11 @@ trading-system/
 ├── backtesting/         # Motore backtesting
 ├── utils/               # Utilities
 ├── sounds/              # File audio
+├── gui.py               # Interfaccia grafica (NEW!)
+├── run_gui.py           # Launcher GUI (NEW!)
 ├── main.py              # Entry point live trading
-└── backtest.py          # Entry point backtesting
+├── backtest.py          # Entry point backtesting
+└── GUI_README.md        # Documentazione GUI (NEW!)
 ```
 
 ## Esempi d'Uso
@@ -252,8 +270,10 @@ Il sistema genera automaticamente:
 
 ## Estensioni Future
 
+- [x] **GUI Desktop** per selezione strategie e monitoraggio (✅ Implementata!)
+- [ ] Grafici in tempo reale nella GUI (candlestick charts)
 - [ ] Supporto per altri exchange (Coinbase, Kraken)
-- [ ] Web dashboard per monitoraggio live
+- [ ] Web dashboard per monitoraggio remoto
 - [ ] Machine Learning per predizioni
 - [ ] Trading di futures e opzioni
 - [ ] Portfolio rebalancing automatico
