@@ -18,8 +18,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from config.trading_rules import ACTIVE_STRATEGY
-from config.settings import BACKTEST_CONFIG
+from config.settings import BACKTEST_CONFIG, CONFIG
 from etl.indicator_calculator import IndicatorCalculator
+from backtesting.backtest_engine import BacktestEngine as NewBacktestEngine
+from backtesting.performance_analyzer import PerformanceAnalyzer
+from backtesting.visualizer import BacktestVisualizer
 
 
 class BacktestEngine:
