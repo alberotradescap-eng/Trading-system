@@ -1,0 +1,25 @@
+# Configurazione simboli da tradare
+
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+  - SOLUSDT
+  - BNBUSDT
+
+# Timeframes per l'analisi
+timeframes:
+  - 1m    # 1 minuto
+  - 5m    # 5 minuti
+  - 15m   # 15 minuti
+  - 1h    # 1 ora
+  - 4h    # 4 ore
+
+# Timeframe principale per il trading
+primary_timeframe: 5m
+
+# Capitale da allocare per ogni simbolo (%)
+allocation:
+  BTCUSDT: 40
+  ETHUSDT: 30
+  SOLUSDT: 20
+  BNBUSDT: 10

@@ -1,0 +1,44 @@
+# Configurazione orari di trading
+
+trading_schedule:
+  enabled: true
+  timezone: 'Europe/Rome'
+
+  # Giorni attivi (lunedi-venerdi)
+  active_days:
+    - monday
+    - tuesday
+    - wednesday
+    - thursday
+    - friday
+    # - saturday
+    # - sunday
+
+  # Orari di trading giornalieri
+  trading_hours:
+    start: "09:00"
+    end: "18:00"
+
+  # Pausa pranzo (opzionale)
+  pause:
+    enabled: true
+    start: "12:00"
+    end: "13:00"
+
+  # Reset giornaliero (per TP/SL FINAL)
+  daily_reset:
+    enabled: true
+    time: "00:00"  # Mezzanotte
+
+  # Blackout periods (es. eventi ad alta volatilità)
+  blackout_periods:
+    - name: "Weekend"
+      enabled: true
+      days: [saturday, sunday]
+
+    - name: "Festivi"
+      enabled: true
+      dates:
+        - "2024-12-25"  # Natale
+        - "2024-01-01"  # Capodanno
+        - "2024-04-01"  # Pasqua (esempio)
