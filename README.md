@@ -7,7 +7,7 @@ Sistema di trading automatizzato per criptovalute con architettura modulare, sup
 - **Trading Realtime**: Connessione a Binance WebSocket per dati live
 - **Architettura Modulare**: Extractors → ETL → Engine → Broker
 - **TP/SL Avanzato**: Stop Loss e Take Profit normali + FINAL (con blocco sistema)
-- **LLM Advisory**: Chiedi consenso a Claude/GPT prima di ogni trade
+- **LLM Advisory**: Chiedi consenso a un LLM (Claude/GPT/Llama/Gemini via OpenRouter) prima di ogni trade
 - **Notifiche Complete**: Audio + Telegram con statistiche e grafici
 - **Backtesting**: Testa strategie su dati storici
 - **Scheduling**: Imposta giorni e orari di trading
@@ -45,9 +45,13 @@ Crea un file `.env`:
 BINANCE_API_KEY=your_api_key
 BINANCE_API_SECRET=your_api_secret
 
-# LLM (Anthropic/OpenAI)
+# LLM - scegli uno dei seguenti provider:
+# Anthropic (Claude)
 ANTHROPIC_API_KEY=your_anthropic_key
+# OpenAI (GPT)
 # OPENAI_API_KEY=your_openai_key
+# OpenRouter (accesso a molti modelli)
+# OPENROUTER_API_KEY=your_openrouter_key
 
 # Telegram
 TELEGRAM_BOT_TOKEN=your_bot_token
@@ -162,24 +166,51 @@ Quando raggiunti i limiti FINAL, il sistema:
 
 ## Plugin LLM
 
-Prima di ogni trade, il sistema può chiedere consenso a un LLM (Claude/GPT).
+Prima di ogni trade, il sistema può chiedere consenso a un LLM per validare la decisione basandosi su analisi tecnica e contesto di mercato.
+
+### Provider Supportati
+
+1. **Anthropic** (Claude): Accesso diretto ai modelli Claude
+2. **OpenAI** (GPT): Accesso diretto ai modelli GPT
+3. **OpenRouter**: Accesso a molti modelli diversi con una sola API key
+   - Claude (Anthropic)
+   - GPT (OpenAI)
+   - Llama (Meta)
+   - Gemini (Google)
+   - Mistral, DeepSeek, e molti altri
+
+### Configurazione
 
 In `config/settings.py`:
 ```python
-TRADING_CONFIG = {
-    'llm_enabled': True,
-    'llm_provider': 'anthropic',  # o 'openai'
-    'llm_api_key': 'your-api-key',
+LLM_CONFIG = {
+    'enabled': True,
+    'provider': 'openrouter',  # 'anthropic', 'openai', o 'openrouter'
+    'api_key': os.getenv('OPENROUTER_API_KEY'),
+    'model': 'anthropic/claude-3.5-sonnet',  # vedi esempi sotto
+    'temperature': 0.3,
 }
 ```
 
-Il sistema invia al LLM:
-- Indicatori tecnici (RSI, MACD, etc.)
-- Prezzo attuale e volume
-- Contesto di mercato
-- Tipo di trade (BUY/SELL)
+**Esempi di modelli OpenRouter:**
+- `anthropic/claude-3.5-sonnet` - Claude Sonnet 3.5
+- `openai/gpt-4-turbo` - GPT-4 Turbo
+- `meta-llama/llama-3.1-70b-instruct` - Llama 3.1 70B
+- `google/gemini-pro-1.5` - Gemini Pro 1.5
+- `mistralai/mistral-large` - Mistral Large
+- `deepseek/deepseek-chat` - DeepSeek Chat
 
-L'LLM risponde con APPROVE o REJECT + motivazione.
+Ottieni la tua API key OpenRouter su: https://openrouter.ai/keys
+
+### Funzionamento
+
+Il sistema invia al LLM:
+- Indicatori tecnici (RSI, MACD, SMA, ATR, etc.)
+- Prezzo attuale e volume
+- Contesto di mercato multi-timeframe
+- Tipo di trade proposto (BUY/SELL)
+
+L'LLM analizza i dati e risponde con **APPROVE** o **REJECT** + motivazione dettagliata.
 
 ## Notifiche
 
