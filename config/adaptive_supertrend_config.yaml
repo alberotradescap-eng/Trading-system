@@ -1,0 +1,108 @@
+# Adaptive SuperTrend Trading System Configuration
+# Version 17 - Enhanced and Bug-Fixed
+
+# ==================== Trading Parameters ====================
+trading:
+  ticker: 'FTSEMIB.MI-LONG'
+  direction: 'long'  # 'long' or 'short'
+  order_type: 'market'  # 'market', 'stop', 'limit', or 'special'
+  instrument: 1  # 1=Equity/Forex, 2=Futures
+  frequency: 2  # 1=Daily, 2=Intraday
+
+# ==================== Risk Management ====================
+risk:
+  operation_money: 50000  # Capital allocated per operation
+  costs: 0  # Transaction costs per trade
+  tick: 0.1  # Minimum price increment
+  bigpointvalue: 5  # Point value for futures (only if instrument=2)
+
+  # Stop Loss & Take Profit
+  stop_loss:
+    enabled: true
+    percentage: 0.10  # 10% of operation_money
+
+  take_profit:
+    enabled: true
+    multiplier: 2.0  # 2x operation_money
+
+  trailing_stop:
+    enabled: false
+    percentage: 0.003  # 0.3%
+
+# ==================== Data Configuration ====================
+data:
+  source_type: 'Adaptive-supertrend'  # 'Regular', 'Lorentzian', or 'Adaptive-supertrend'
+  filename: 'adaptive_supertrend_with_stop_losses.csv'
+
+  # Resampling
+  resampling:
+    enabled: false
+    rate: '10T'  # '5T' = 5 minutes, '60T' = 1 hour, '120T' = 2 hours
+
+  # Data paths (relative to base_path)
+  paths:
+    base: '.'
+    data: 'data'
+    data_simulation: 'data-simulation'
+    reports: 'reports'
+    reports_simulation: 'reports-simulation'
+    logs: 'logs'
+    sounds: 'sounds'
+
+# ==================== Live Trading ====================
+live_trading:
+  enabled: false
+  paper_trading: true  # Set to false for real trading
+  broker: 'TZ'  # 'ALPACA', 'BINANCE', 'IB', or 'TZ'
+
+  # Trading schedule
+  schedule:
+    start_date: '2024-09-10'
+    start_hour: 7
+    start_min: 0
+    start_sec: 0
+
+# ==================== Simulation ====================
+simulation:
+  enabled: false  # Set to true for backtesting
+  export_filename: 'trading_system.csv'
+
+  # Entry analysis levels (for Maraldi analysis)
+  entry_levels:
+    short: 99999
+    long: 0
+
+# ==================== System Behavior ====================
+behavior:
+  silent_mode: true  # Only report when operations occur
+  verbose: false  # Detailed logging
+  debug_parameters: true  # Log all parameters
+
+  # Filter same-bar entry/exit
+  eliminate_same_bar_entry_exit: true
+
+# ==================== Notifications ====================
+notifications:
+  telegram:
+    enabled: false
+    bot_name: 'BOT Adaptive SuperTrend'
+
+  audio:
+    enabled: false
+    buy_sound: 'sounds/Compra.wav'
+    sell_sound: 'sounds/Vendi.wav'
+
+# ==================== Strategy Parameters ====================
+strategy:
+  # Adaptive SuperTrend specific parameters
+  adaptive_supertrend:
+    # Entry signals column names in data
+    entry_long_column: 'adapt_supertrend_entry_long'
+    entry_short_column: 'adapt_supertrend_entry_short'
+    exit_long_column: 'adapt_supertrend_exit_long'
+    exit_short_column: 'adapt_supertrend_exit_short'
+
+  # Additional filters can be added here
+  filters:
+    enabled: false
+    # Example: minimum volume, price levels, etc.
