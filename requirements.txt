@@ -5,8 +5,19 @@ ccxt==4.5.12
 # Data Processing
 pandas==2.1.4
 numpy==1.26.2
-ta-lib==0.4.28
-ta==0.11.0  # Technical Analysis library (different from ta-lib)
+
+# TA-Lib - Technical Analysis Library
+# WINDOWS USERS: Do NOT install with pip directly!
+# See INSTALL.md for detailed Windows installation instructions
+# Recommended: Use pre-built wheels from https://github.com/cgohlke/talib-build/releases
+# For Python 3.9:  pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp39-cp39-win_amd64.whl
+# For Python 3.10: pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp310-cp310-win_amd64.whl
+# For Python 3.11: pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp311-cp311-win_amd64.whl
+# For Python 3.12: pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp312-cp312-win_amd64.whl
+# Linux/macOS: Install C library first, then uncomment line below
+# ta-lib==0.4.28
+
+ta==0.11.0  # Technical Analysis library (pure Python alternative to ta-lib)
 pyarrow==14.0.1
 
 # Backtesting

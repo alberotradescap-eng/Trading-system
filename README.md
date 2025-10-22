@@ -29,16 +29,70 @@ Vedi [ARCHITECTURE.md](ARCHITECTURE.md) per dettagli completi.
 
 ## Installazione
 
+### Installazione Automatica (Consigliata)
+
+**Windows**:
+```powershell
+# Esegui lo script di installazione automatica
+.\install_windows.ps1
+```
+
+**Linux/macOS**:
+```bash
+# Rendi eseguibile e lancia lo script
+chmod +x install_linux_mac.sh
+./install_linux_mac.sh
+```
+
+### Installazione Manuale
+
+**IMPORTANTE per utenti Windows**: L'installazione di TA-Lib richiede passaggi specifici. Consulta la [guida dettagliata di installazione](INSTALL.md).
+
 ### 1. Requisiti
-- Python 3.10+
+- Python 3.9+ (3.10 o 3.11 consigliato)
 - TA-Lib (per indicatori tecnici)
 
-### 2. Installa dipendenze
+### 2. Installa TA-Lib
+
+**Windows**: Usa i wheel pre-compilati (consigliato)
+```powershell
+# Python 3.9
+pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp39-cp39-win_amd64.whl
+
+# Python 3.10
+pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp310-cp310-win_amd64.whl
+
+# Python 3.11
+pip install https://github.com/cgohlke/talib-build/releases/download/v0.4.28/TA_Lib-0.4.28-cp311-cp311-win_amd64.whl
+```
+
+**Linux (Ubuntu/Debian)**:
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential wget
+cd /tmp
+wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+tar -xzf ta-lib-0.4.0-src.tar.gz
+cd ta-lib/
+./configure --prefix=/usr
+make
+sudo make install
+sudo ldconfig
+```
+
+**macOS**:
+```bash
+brew install ta-lib
+```
+
+Per istruzioni dettagliate e troubleshooting, vedi [INSTALL.md](INSTALL.md).
+
+### 3. Installa altre dipendenze
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configura variabili d'ambiente
+### 4. Configura variabili d'ambiente
 Crea un file `.env`:
 ```env
 # Binance API
@@ -58,7 +112,7 @@ TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
 ```
 
-### 4. Configura trading
+### 5. Configura trading
 Modifica i file in `config/`:
 - `symbols.yaml`: Crypto da tradare
 - `schedule.yaml`: Orari di trading
