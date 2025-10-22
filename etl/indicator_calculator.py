@@ -167,6 +167,161 @@ class IndicatorCalculator:
         return obv
 
     # ========================================================================
+    # SUPERTREND & ADAPTIVE SUPERTREND
+    # ========================================================================
+
+    @staticmethod
+    def calculate_supertrend(data, period=10, multiplier=3.0):
+        """
+        SuperTrend Indicator
+
+        Args:
+            data: DataFrame with OHLC data
+            period: ATR period (default 10)
+            multiplier: ATR multiplier (default 3.0)
+
+        Returns:
+            tuple: (supertrend, direction)
+                   - supertrend: Series with SuperTrend values
+                   - direction: Series with 1 (uptrend) or -1 (downtrend)
+        """
+        # Calculate ATR
+        atr = IndicatorCalculator.calculate_atr(data, period=period)
+
+        # Calculate basic bands
+        hl_avg = (data['high'] + data['low']) / 2
+        upper_band = hl_avg + (multiplier * atr)
+        lower_band = hl_avg - (multiplier * atr)
+
+        # Initialize arrays
+        supertrend = pd.Series(index=data.index, dtype=float)
+        direction = pd.Series(index=data.index, dtype=int)
+
+        # Calculate SuperTrend
+        for i in range(len(data)):
+            if i == 0:
+                supertrend.iloc[i] = upper_band.iloc[i]
+                direction.iloc[i] = 1
+                continue
+
+            # Adjust bands
+            if lower_band.iloc[i] > supertrend.iloc[i-1] or data['close'].iloc[i-1] < supertrend.iloc[i-1]:
+                final_lower = lower_band.iloc[i]
+            else:
+                final_lower = max(lower_band.iloc[i], supertrend.iloc[i-1])
+
+            if upper_band.iloc[i] < supertrend.iloc[i-1] or data['close'].iloc[i-1] > supertrend.iloc[i-1]:
+                final_upper = upper_band.iloc[i]
+            else:
+                final_upper = min(upper_band.iloc[i], supertrend.iloc[i-1])
+
+            # Determine trend direction
+            if data['close'].iloc[i] > final_upper:
+                supertrend.iloc[i] = final_lower
+                direction.iloc[i] = 1  # Uptrend
+            elif data['close'].iloc[i] < final_lower:
+                supertrend.iloc[i] = final_upper
+                direction.iloc[i] = -1  # Downtrend
+            else:
+                supertrend.iloc[i] = supertrend.iloc[i-1]
+                direction.iloc[i] = direction.iloc[i-1]
+
+        return supertrend, direction
+
+    @staticmethod
+    def calculate_adaptive_supertrend(data, atr_period=10, factor_base=3.0,
+                                     adaptive_period=14, sensitivity=1.0):
+        """
+        Adaptive SuperTrend - adjusts multiplier based on market volatility
+
+        The adaptive version dynamically adjusts the ATR multiplier based on
+        recent price volatility, making it more responsive to market conditions.
+
+        Args:
+            data: DataFrame with OHLC data
+            atr_period: Period for ATR calculation (default 10)
+            factor_base: Base multiplier for ATR (default 3.0)
+            adaptive_period: Period for volatility adaptation (default 14)
+            sensitivity: Sensitivity factor for adaptation (default 1.0)
+
+        Returns:
+            tuple: (supertrend, direction, multiplier_series, entry_long, entry_short, exit_long, exit_short)
+        """
+        # Calculate ATR
+        atr = IndicatorCalculator.calculate_atr(data, period=atr_period)
+
+        # Calculate adaptive multiplier based on price volatility
+        close_std = data['close'].rolling(window=adaptive_period).std()
+        close_mean = data['close'].rolling(window=adaptive_period).mean()
+        volatility_ratio = (close_std / close_mean).fillna(1.0)
+
+        # Adjust multiplier: higher volatility = higher multiplier
+        adaptive_multiplier = factor_base * (1 + sensitivity * volatility_ratio)
+
+        # Calculate basic bands with adaptive multiplier
+        hl_avg = (data['high'] + data['low']) / 2
+        upper_band = hl_avg + (adaptive_multiplier * atr)
+        lower_band = hl_avg - (adaptive_multiplier * atr)
+
+        # Initialize arrays
+        supertrend = pd.Series(index=data.index, dtype=float)
+        direction = pd.Series(index=data.index, dtype=int)
+
+        # Calculate Adaptive SuperTrend
+        for i in range(len(data)):
+            if i == 0:
+                supertrend.iloc[i] = upper_band.iloc[i]
+                direction.iloc[i] = 1
+                continue
+
+            # Adjust bands with trend logic
+            if lower_band.iloc[i] > supertrend.iloc[i-1] or data['close'].iloc[i-1] < supertrend.iloc[i-1]:
+                final_lower = lower_band.iloc[i]
+            else:
+                final_lower = max(lower_band.iloc[i], supertrend.iloc[i-1])
+
+            if upper_band.iloc[i] < supertrend.iloc[i-1] or data['close'].iloc[i-1] > supertrend.iloc[i-1]:
+                final_upper = upper_band.iloc[i]
+            else:
+                final_upper = min(upper_band.iloc[i], supertrend.iloc[i-1])
+
+            # Determine trend direction
+            if data['close'].iloc[i] > final_upper:
+                supertrend.iloc[i] = final_lower
+                direction.iloc[i] = 1  # Uptrend
+            elif data['close'].iloc[i] < final_lower:
+                supertrend.iloc[i] = final_upper
+                direction.iloc[i] = -1  # Downtrend
+            else:
+                supertrend.iloc[i] = supertrend.iloc[i-1]
+                direction.iloc[i] = direction.iloc[i-1]
+
+        # Generate trading signals
+        entry_long = pd.Series(False, index=data.index)
+        entry_short = pd.Series(False, index=data.index)
+        exit_long = pd.Series(False, index=data.index)
+        exit_short = pd.Series(False, index=data.index)
+
+        for i in range(1, len(data)):
+            # Long entry: direction changes from -1 to 1
+            if direction.iloc[i] == 1 and direction.iloc[i-1] == -1:
+                entry_long.iloc[i] = True
+
+            # Short entry: direction changes from 1 to -1
+            if direction.iloc[i] == -1 and direction.iloc[i-1] == 1:
+                entry_short.iloc[i] = True
+
+            # Long exit: currently in uptrend but price crosses below supertrend
+            if direction.iloc[i] == -1 and direction.iloc[i-1] == 1:
+                exit_long.iloc[i] = True
+
+            # Short exit: currently in downtrend but price crosses above supertrend
+            if direction.iloc[i] == 1 and direction.iloc[i-1] == -1:
+                exit_short.iloc[i] = True
+
+        return supertrend, direction, adaptive_multiplier, entry_long, entry_short, exit_long, exit_short
+
+    # ========================================================================
     # MAIN PROCESSING
     # ========================================================================
 
@@ -216,6 +371,21 @@ class IndicatorCalculator:
         logger.debug("Calcolando Volume indicators...")
         df['volume_sma_20'] = self.calculate_volume_sma(df, period=20)
         df['obv'] = self.calculate_obv(df)
+
+        logger.debug("Calcolando Adaptive SuperTrend...")
+        (df['adaptive_supertrend'],
+         df['adaptive_supertrend_direction'],
+         df['adaptive_multiplier'],
+         df['adapt_supertrend_entry_long'],
+         df['adapt_supertrend_entry_short'],
+         df['adapt_supertrend_exit_long'],
+         df['adapt_supertrend_exit_short']) = self.calculate_adaptive_supertrend(
+            df,
+            atr_period=10,
+            factor_base=3.0,
+            adaptive_period=14,
+            sensitivity=1.0
+        )
 
         # Rimuovi NaN (prime righe dove indicatori non sono calcolabili)
         df = df.dropna()
@@ -293,6 +463,15 @@ class IndicatorCalculator:
         df['atr'] = self.calculate_atr(df)
         df['volume_sma_20'] = self.calculate_volume_sma(df)
 
+        # Calculate Adaptive SuperTrend
+        (df['adaptive_supertrend'],
+         df['adaptive_supertrend_direction'],
+         df['adaptive_multiplier'],
+         df['adapt_supertrend_entry_long'],
+         df['adapt_supertrend_entry_short'],
+         df['adapt_supertrend_exit_long'],
+         df['adapt_supertrend_exit_short']) = self.calculate_adaptive_supertrend(df)
+
         # Prendi ultimo valore (più recente)
         last = df.iloc[-1]
 
@@ -310,6 +489,12 @@ class IndicatorCalculator:
             'bb_lower': last['bb_lower'],
             'atr': last['atr'],
             'volume_sma_20': last['volume_sma_20'],
+            'adaptive_supertrend': last['adaptive_supertrend'],
+            'adaptive_supertrend_direction': last['adaptive_supertrend_direction'],
+            'adapt_supertrend_entry_long': last['adapt_supertrend_entry_long'],
+            'adapt_supertrend_entry_short': last['adapt_supertrend_entry_short'],
+            'adapt_supertrend_exit_long': last['adapt_supertrend_exit_long'],
+            'adapt_supertrend_exit_short': last['adapt_supertrend_exit_short'],
         }
 
 
