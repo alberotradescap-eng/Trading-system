@@ -1,5 +1,50 @@
 # Configurazione simboli da tradare
+# Supporta crypto (Binance), stocks, ETFs, forex (yFinance)
 
+# Configurazione Multi-Asset
+# Ogni categoria può usare un broker diverso:
+# - crypto: Binance (trading reale) o yFinance (paper trading)
+# - stocks/etfs: yFinance (paper trading)
+# - forex: yFinance (paper trading)
+
+# Simboli suddivisi per asset type
+symbols_by_type:
+  # Crypto - Binance (trading reale)
+  crypto_binance:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+
+  # Crypto - yFinance (paper trading)
+  crypto_yfinance:
+    - BTC-USD
+    - ETH-USD
+    # - SOL-USD
+
+  # Stocks - yFinance (paper trading)
+  stocks:
+    - AAPL      # Apple
+    - MSFT      # Microsoft
+    - GOOGL     # Google
+    - TSLA      # Tesla
+    # - NVDA    # NVIDIA
+    # - META    # Meta
+
+  # ETFs - yFinance (paper trading)
+  etfs:
+    - SPY       # S&P 500
+    - QQQ       # NASDAQ 100
+    # - IWM     # Russell 2000
+    # - DIA     # Dow Jones
+
+  # Forex - yFinance (paper trading)
+  forex:
+    - EURUSD=X  # EUR/USD
+    # - GBPUSD=X  # GBP/USD
+    # - USDJPY=X  # USD/JPY
+
+# Configurazione legacy (compatibilità con codice esistente)
 symbols:
   - BTCUSDT
   - ETHUSDT
@@ -19,7 +64,17 @@ primary_timeframe: 5m
 
 # Capitale da allocare per ogni simbolo (%)
 allocation:
+  # Crypto Binance
   BTCUSDT: 40
   ETHUSDT: 30
   SOLUSDT: 20
   BNBUSDT: 10
+
+  # Stocks (Paper Trading)
+  AAPL: 10
+  MSFT: 10
+  GOOGL: 5
+
+  # ETFs (Paper Trading)
+  SPY: 10
+  QQQ: 5

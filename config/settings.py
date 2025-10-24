@@ -17,6 +17,48 @@ BINANCE_CONFIG = {
 }
 
 # ============================================================================
+# YFINANCE BROKER CONFIGURATION (Paper Trading)
+# ============================================================================
+YFINANCE_CONFIG = {
+    'enabled': True,                        # Abilita broker yFinance per paper trading
+    'initial_capital': 10000,               # Capitale iniziale per paper trading ($)
+    'commission_pct': 0.001,                # Commissione 0.1% (simula broker reale)
+    'slippage_pct': 0.0005,                 # Slippage 0.05% per market orders
+    'data_dir': 'data/paper_trading',       # Directory per log paper trading
+
+    # Asset supportati
+    'supported_assets': ['stock', 'etf', 'crypto', 'forex', 'commodity'],
+
+    # Cache settings
+    'cache_ttl': 60,                        # Cache time-to-live (secondi)
+
+    # Market hours (per stocks US)
+    'market_hours_check': True,             # Controlla orari di mercato
+    'market_open': '09:30',                 # Apertura mercato US (ET)
+    'market_close': '16:00',                # Chiusura mercato US (ET)
+}
+
+# ============================================================================
+# MULTI-BROKER CONFIGURATION
+# ============================================================================
+MULTI_BROKER_CONFIG = {
+    'enabled': True,                        # Abilita trading multi-broker
+
+    # Broker da usare per ogni asset type
+    'broker_mapping': {
+        'crypto_binance': 'binance',        # BTCUSDT, ETHUSDT -> Binance (real)
+        'crypto_yfinance': 'yfinance',      # BTC-USD, ETH-USD -> yFinance (paper)
+        'stocks': 'yfinance',               # AAPL, MSFT -> yFinance (paper)
+        'etfs': 'yfinance',                 # SPY, QQQ -> yFinance (paper)
+        'forex': 'yfinance',                # EURUSD=X -> yFinance (paper)
+    },
+
+    # Load balancing (se vuoi distribuire load tra broker)
+    'load_balancing': False,
+    'max_orders_per_broker': 100,
+}
+
+# ============================================================================
 # TRADING CONFIGURATION
 # ============================================================================
 TRADING_CONFIG = {
@@ -206,6 +248,8 @@ ADVANCED_CONFIG = {
 # ============================================================================
 CONFIG = {
     'binance': BINANCE_CONFIG,
+    'yfinance': YFINANCE_CONFIG,
+    'multi_broker': MULTI_BROKER_CONFIG,
     'trading': TRADING_CONFIG,
     'llm': LLM_CONFIG,
     'telegram': TELEGRAM_CONFIG,
