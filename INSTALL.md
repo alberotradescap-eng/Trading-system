@@ -18,7 +18,33 @@ This guide provides detailed installation instructions for the Crypto Trading Sy
 
 ## Windows Installation
 
-### Method 1: Automated Installation (EASIEST)
+### Method 1: Anaconda/Miniconda (RECOMMENDED)
+
+If you use Anaconda or Miniconda, this is the easiest method:
+
+#### Step 1: Create and activate a conda environment
+
+```cmd
+conda create -n trading-system python=3.11
+conda activate trading-system
+```
+
+#### Step 2: Run the automated conda installation script
+
+```cmd
+install_conda_windows.bat
+```
+
+This script:
+- Verifies that a conda environment is activated
+- Installs essential packages with conda (numpy, pandas, matplotlib, seaborn)
+- Installs TA-Lib from pre-built wheels
+- Installs all other dependencies with pip
+- Verifies the installation
+
+**Note**: You MUST activate your conda environment before running this script!
+
+### Method 2: Automated Installation with venv (EASIEST for non-conda users)
 
 We provide two automated installation scripts that handle everything for you:
 
@@ -54,7 +80,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 .\install_windows.ps1
 ```
 
-### Method 2: Using Pre-built Wheels (MANUAL)
+### Method 3: Using Pre-built Wheels (MANUAL)
 
 If you prefer to install manually, this method avoids the need for Visual C++ Build Tools.
 
@@ -105,7 +131,7 @@ python -c "import talib; print(talib.__version__)"
 
 If this prints the version (e.g., `0.4.28`), you're all set!
 
-### Method 3: Install from Source (Advanced)
+### Method 4: Install from Source (Advanced)
 
 If you need to build from source, follow these steps:
 
@@ -157,20 +183,51 @@ $env:TA_INCLUDE_PATH = "C:\ta-lib\c\include"
 pip install ta-lib
 ```
 
-### Method 4: Using Conda (Alternative)
-
-If you use Anaconda or Miniconda:
-
-```powershell
-conda install -c conda-forge ta-lib
-```
-
-Then install the remaining dependencies:
-```powershell
-pip install -r requirements.txt
-```
-
 ## Linux Installation
+
+### Method 1: Anaconda/Miniconda (RECOMMENDED)
+
+If you use Anaconda or Miniconda, this is the easiest method:
+
+#### Step 1: Create and activate a conda environment
+
+```bash
+conda create -n trading-system python=3.11
+conda activate trading-system
+```
+
+#### Step 2: Run the automated conda installation script
+
+```bash
+./install_conda_linux_mac.sh
+```
+
+This script:
+- Verifies that a conda environment is activated
+- Installs essential packages with conda (numpy, pandas, matplotlib, seaborn)
+- Attempts to install TA-Lib with conda
+- Falls back to building from source if needed
+- Installs all other dependencies with pip
+- Verifies the installation
+
+**Note**: You MUST activate your conda environment before running this script!
+
+### Method 2: Automated Installation with venv
+
+#### Automated Script
+
+```bash
+./install_linux_mac.sh
+```
+
+This script:
+- Automatically detects your Linux distribution
+- Installs TA-Lib C library
+- Creates a virtual environment
+- Installs all dependencies
+- Verifies the installation
+
+### Method 3: Manual Installation
 
 ### Ubuntu/Debian
 
@@ -220,7 +277,48 @@ pip install -r requirements.txt
 
 ## macOS Installation
 
-### Using Homebrew (Recommended)
+### Method 1: Anaconda/Miniconda (RECOMMENDED)
+
+If you use Anaconda or Miniconda, this is the easiest method:
+
+#### Step 1: Create and activate a conda environment
+
+```bash
+conda create -n trading-system python=3.11
+conda activate trading-system
+```
+
+#### Step 2: Run the automated conda installation script
+
+```bash
+./install_conda_linux_mac.sh
+```
+
+This script:
+- Verifies that a conda environment is activated
+- Installs essential packages with conda (numpy, pandas, matplotlib, seaborn)
+- Attempts to install TA-Lib with conda
+- Falls back to Homebrew or building from source if needed
+- Installs all other dependencies with pip
+- Verifies the installation
+
+**Note**: You MUST activate your conda environment before running this script!
+
+### Method 2: Automated Installation with venv
+
+#### Automated Script
+
+```bash
+./install_linux_mac.sh
+```
+
+This script:
+- Installs TA-Lib using Homebrew or builds from source
+- Creates a virtual environment
+- Installs all dependencies
+- Verifies the installation
+
+### Method 3: Using Homebrew (Manual)
 
 ```bash
 # Install TA-Lib C library
@@ -234,7 +332,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Building from Source
+### Method 4: Building from Source
 
 ```bash
 # Install TA-Lib C library
