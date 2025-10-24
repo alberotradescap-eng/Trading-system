@@ -18,9 +18,45 @@ This guide provides detailed installation instructions for the Crypto Trading Sy
 
 ## Windows Installation
 
-### Method 1: Using Pre-built Wheels (RECOMMENDED)
+### Method 1: Automated Installation (EASIEST)
 
-This is the easiest method for Windows users and avoids the need for Visual C++ Build Tools.
+We provide two automated installation scripts that handle everything for you:
+
+#### Option A: Batch File (No Execution Policy Issues)
+
+If you encounter PowerShell execution policy errors, use the batch file:
+
+```cmd
+install_windows.bat
+```
+
+This script:
+- Works without PowerShell execution policy restrictions
+- Automatically detects your Python version
+- Creates a virtual environment
+- Installs TA-Lib from pre-built wheels
+- Installs all other dependencies
+- Verifies the installation
+
+**Simply double-click `install_windows.bat` or run it from Command Prompt.**
+
+#### Option B: PowerShell Script
+
+If you have PowerShell execution permissions:
+
+```powershell
+.\install_windows.ps1
+```
+
+**Note:** If you get an execution policy error like "execution of scripts is disabled", use Option A (batch file) instead, or temporarily bypass the policy:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+.\install_windows.ps1
+```
+
+### Method 2: Using Pre-built Wheels (MANUAL)
+
+If you prefer to install manually, this method avoids the need for Visual C++ Build Tools.
 
 #### Step 1: Install Python Dependencies (except ta-lib)
 
@@ -69,7 +105,7 @@ python -c "import talib; print(talib.__version__)"
 
 If this prints the version (e.g., `0.4.28`), you're all set!
 
-### Method 2: Install from Source (Advanced)
+### Method 3: Install from Source (Advanced)
 
 If you need to build from source, follow these steps:
 
@@ -121,7 +157,7 @@ $env:TA_INCLUDE_PATH = "C:\ta-lib\c\include"
 pip install ta-lib
 ```
 
-### Method 3: Using Conda (Alternative)
+### Method 4: Using Conda (Alternative)
 
 If you use Anaconda or Miniconda:
 
@@ -309,9 +345,21 @@ pip list
 
 ### Windows Issues
 
+#### Error: "execution of scripts is disabled" or "UnauthorizedAccess" (PowerShell)
+- **Solution 1**: Use the batch file instead: `install_windows.bat`
+- **Solution 2**: Temporarily bypass execution policy for the current session:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+  .\install_windows.ps1
+  ```
+- **Solution 3**: Enable scripts permanently (requires admin):
+  ```powershell
+  Set-ExecutionPolicy RemoteSigned
+  ```
+
 #### Error: "Microsoft Visual C++ 14.0 or greater is required"
-- **Solution**: Use Method 1 (pre-built wheels) instead of building from source
-- Alternatively, install Visual C++ Build Tools (see Method 2)
+- **Solution**: Use Method 1 (automated installation) or Method 2 (pre-built wheels) instead of building from source
+- Alternatively, install Visual C++ Build Tools (see Method 3)
 
 #### Error: "Cannot find ta-lib library"
 - **Solution**: Ensure you've installed the C library to `C:\ta-lib`
