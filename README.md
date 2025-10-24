@@ -29,7 +29,23 @@ Vedi [ARCHITECTURE.md](ARCHITECTURE.md) per dettagli completi.
 
 ## Installazione
 
-### Installazione Automatica (Consigliata)
+### Opzione 1: Anaconda (RACCOMANDATO - più semplice)
+
+Se usi Anaconda o Miniconda, l'installazione è molto più semplice (specialmente su Windows):
+
+```bash
+# Crea l'ambiente con tutte le dipendenze
+conda env create -f environment.yml
+
+# Attiva l'ambiente
+conda activate trading-system
+```
+
+Vedi la [Guida Completa Anaconda](INSTALL_ANACONDA.md) per istruzioni dettagliate in italiano.
+
+**Vantaggi**: TA-Lib si installa automaticamente senza problemi, niente compilatori necessari!
+
+### Opzione 2: Installazione Automatica con Script
 
 **Windows**:
 ```powershell
@@ -44,7 +60,7 @@ chmod +x install_linux_mac.sh
 ./install_linux_mac.sh
 ```
 
-### Installazione Manuale
+### Opzione 3: Installazione Manuale
 
 **IMPORTANTE per utenti Windows**: L'installazione di TA-Lib richiede passaggi specifici. Consulta la [guida dettagliata di installazione](INSTALL.md).
 
